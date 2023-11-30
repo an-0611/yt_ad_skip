@@ -57,4 +57,6 @@ const observer = new MutationObserver(mutationCallback);
 
 // Configure the observer to watch for changes in the body (or any other element)
 const observerConfig = { childList: true, subtree: true };
+// childList: 是否監視目標節點的子節點變化, 會監視子節點的增加或刪除
+// subtree: 是否監視目標節點的所有後代節點，不僅是直接的子節點。設定 true，則會監視整個 DOM 樹中與目標節點相關的所有節點。
 observer.observe(document.body, observerConfig);
