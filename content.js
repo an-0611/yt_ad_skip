@@ -66,8 +66,10 @@ let setting = {
     skip_ad_callback: function twitch_skip_ad() {
       if (document.querySelector(".avap-ads-container"))
         document.querySelector(".avap-ads-container").style.display = "none";
-      if (document.querySelector("video"))
-        document.querySelector("video").muted = false;
+      // if (
+      //   document.querySelector("video") &&
+      // )
+      //   document.querySelector("video").muted = false;
       let elements = document.querySelectorAll(
         ".ScTransitionBase-sc-hx4quq-0.dVNdRE.tw-transition"
       );
