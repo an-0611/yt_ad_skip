@@ -11,6 +11,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*", "https://www.twitch.tv/*"],
+      "exclude_matches": ["https://www.twitch.tv/"],
       "js": ["content.js"]
     }
   ]
