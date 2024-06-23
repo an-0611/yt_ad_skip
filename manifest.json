@@ -1,15 +1,18 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Youtube Ad Skipper",
   "version": "1.0",
   "description": "Log the current page URL to console",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "tabs", "scripting"],
   "icons": {
     "48": "icon.png"
   },
   "browser_action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
