@@ -11,6 +11,7 @@
 //     else console.log('透過 click() 方法觸發的事件');
 // });
 
+// 2024/6/21 if detect skip,  not load video uuid , adjust event to load event
 window.addEventListener("load", (event) => {
   // 完全加載後執行的代碼
   console.log("Page fully loaded");
