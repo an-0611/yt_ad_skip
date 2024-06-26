@@ -12,6 +12,9 @@
 // });
 
 // 2024/6/21 if detect skip,  not load video uuid , adjust event to load event
+// 換頁時重新註冊 ！！！ 不然切其他影片又會再跳一次
+// (1) 移除 start
+// (2) 替每個影片加上 target blank
 window.addEventListener("load", (event) => {
   // 完全加載後執行的代碼
   console.log("Page fully loaded");
@@ -43,7 +46,8 @@ function start() {
 
   let setting = {
     YT: {
-      dom_target: document.body,
+      dom_target: document.querySelector("body"), // document.body (抓太多元素) ,
+      // document.querySelector(".style-scope.ytd-watch-metadata yt-formatted-string") 只抓影片標題
       skip_ad_callback: function yt_skip_ad() {
         // skip dialog
         // let dialog = document.querySelectorAll(
@@ -69,6 +73,14 @@ function start() {
         //   document.querySelector("tp-yt-iron-overlay-backdrop")?.remove();
         //   document.querySelector("ytd-enforcement-message-view-model")?.remove();
         //   document.querySelector("video").play();
+        // }
+        // if (
+        //   document.querySelector("yt-playability-error-supported-renderers")
+        // ) {
+        //   setTimeout(() => {
+        //     window.location.reload();
+        //   }, 300);
+        //   return;
         // }
         if (document.querySelector(".ad-showing")) {
           var isAccelerate = false;
@@ -158,7 +170,7 @@ function start() {
     const observer = new MutationObserver(mutationCallback);
 
     // Configure the observer to watch for changes in the body (or any other element)
-    const observerConfig = { childList: true, subtree: true };
+    const observerConfig = { childList: true, subtree: false };
     // childList: 是否監視目標節點的子節點變化, 會監視子節點的增加或刪除
     // subtree: 是否監視目標節點的所有後代節點，不僅是直接的子節點。設定 true，則會監視整個 DOM 樹中與目標節點相關的所有節點。
 
