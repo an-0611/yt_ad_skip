@@ -18,8 +18,114 @@
 window.addEventListener("load", (event) => {
   // 完全加載後執行的代碼
   console.log("Page fully loaded");
+
+  loadPastVideoSecond();
   start();
 });
+
+// 一進網頁清空 parameter 避免每次重新載入又是一樣秒數
+function updateQueryParameter(url, parameter, val) {
+  // 創建一個 URL 物件
+  const urlObj = new URL(url);
+  // 使用 URLSearchParams 物件操作查詢參數
+  const params = urlObj.searchParams;
+  // 刪除指定的查詢參數
+  params.delete(parameter);
+  //
+  params.append(parameter, val);
+  // 返回新的 URL
+  return urlObj.toString();
+}
+
+var currentUrl = new URL(window.location.href);
+
+function loadPastVideoSecond() {
+  var expired_second = 3 * 24 * 60 * 60 * 1000; // 設定三天過期
+  var firstCurrentTime = new Date().getTime(); // 第一次進入頁面的現在時間 與 timeupdate 事件中會一直更新的 currentTime 會不一樣
+  // 1. ㄧ進畫面刪除過期的 localStorage.get(`ytt-${video_id}`); (done)
+  let prefix = "ytt";
+  for (const key in localStorage) {
+    if (key.startsWith(prefix)) {
+      let expiredTime = JSON.parse(localStorage.getItem(key))?.expiredTime;
+      if (expiredTime && firstCurrentTime - expiredTime > expired_second) {
+        localStorage.removeItem(key);
+      }
+    }
+  }
+  // 2. 如果有 localStorage.get(`yt-${video_id}`,); 仍在時效內 window.location.href = (done)
+  var video_id = currentUrl.searchParams.get("v");
+  var t = currentUrl.searchParams.get("t");
+  if (!t && video_id) {
+    var pastExpiredTime = JSON.parse(
+      localStorage.getItem(`${prefix}-${video_id}`)
+    )?.expiredTime;
+    var pastRecordWatchSecond =
+      JSON.parse(localStorage.getItem(`${prefix}-${video_id}`))?.curSecond ||
+      "0";
+    if (
+      pastExpiredTime &&
+      firstCurrentTime - pastExpiredTime <= expired_second
+    ) {
+      // 如果上次有播影片紀錄時間 還有效
+      window.location.href = `https://youtu.be/${video_id}?t=${pastRecordWatchSecond}s`;
+      return;
+    } else {
+      // 第一次進來所以沒有 t 給他加上 t = 0s
+      var newUrl = updateQueryParameter(window.location.href, "t", `${0}s`);
+      history.replaceState("", "", newUrl);
+    }
+  } else {
+    // 如果 url 上有 t 的話, replaceState 掉, 或者每次 timeupdate 更新到 url 上
+    // setTimeout(() => {
+    //   var url = window.location.href;
+    //   // 刪除 t 參數
+    //   var newUrl = removeQueryParameter(url, "t");
+    //   history.replaceState("", "", newUrl);
+    // }, 200);
+  }
+  // 3. 開始播放影片時 每五秒要 set localStorage.set(`yt-${video_id}`, expired = new Date().getTime()); (done)
+  setTimeout(() => {
+    // 延遲 500ms 避免影片 null
+    var video = document.querySelector("video");
+    let initSecond = video?.currentTime?.toFixed(); // 先抓到影片一進來的秒數 然後 event 內每多五秒才更新一次 localstorage
+    // video.currentTime?. 是避免一進入就是廣告 會抓不到 video 的 currentTime, 所以當沒有 initSecond 時, 不會註冊 timeupdate 事件
+    // 會繼續執行後續的 observable code
+    // if (initSecond) {
+    // ！！！避免抓到廣告影片的 currentTime
+    video?.addEventListener("timeupdate", () => {
+      // 每當影片播放時間更新時觸發事件
+      // 不要設定廣告影片 second 到 localStorage 避免下次進來改變秒數
+      // 廣告結束後還是要設定秒數
+      let curSecond = video.currentTime.toFixed();
+      console.log("curSecond: ", curSecond);
+
+      if (!document.querySelector(".ad-showing") && video_id) {
+        // let curSecond = video.currentTime.toFixed();
+        // console.log("curSecond: ", curSecond);
+        if (curSecond - initSecond >= 5) {
+          initSecond = curSecond;
+          let currentTime = new Date().getTime();
+          let expiredTime = new Date(currentTime + expired_second).getTime();
+          // 每次更新到 localstorage 上
+          localStorage.setItem(
+            `${prefix}-${video_id}`,
+            JSON.stringify({ curSecond, expiredTime })
+          );
+          // 每次更新到 url 上
+          var newUrl = updateQueryParameter(
+            window.location.href,
+            "t",
+            `${curSecond}s`
+          );
+          history.replaceState("", "", newUrl);
+        }
+      }
+    });
+  }, 500);
+
+  // }
+  // 以上事件都註冊一次 在 observable 之前
+}
 
 function start() {
   // content.js
@@ -82,6 +188,7 @@ function start() {
         //   }, 300);
         //   return;
         // }
+
         if (document.querySelector(".ad-showing")) {
           var isAccelerate = false;
           document.querySelector("video").muted = true;
@@ -182,4 +289,23 @@ function start() {
   // 除了抓不到 .persistent-player, 首頁的影片結構跟直接進入頻道 url 的也不一樣,
   // 又為了顧及效能抓 persistent-player, 只能在 “頻道頁“ 執行 content.js (避免 observer 被首頁污染),
   // 故到了 頻道頁面 需要重整一次
+
+  // 強制攔截彈窗
+  setInterval(() => {
+    console.log("monitor black popup");
+    var video_id = currentUrl.searchParams.get("v");
+    if (
+      document.querySelector("ytd-enforcement-message-view-model") &&
+      video_id
+    ) {
+      setTimeout(() => {
+        document.querySelector(".yt-spec-button-view-model button")?.click();
+        window.location.reload();
+        // setTimeout(() => {
+        //     document.querySelectorAll('c-wiz button')?.[4].click();
+        // }, 300)
+      }, 200);
+      return;
+    }
+  }, 2000);
 }
